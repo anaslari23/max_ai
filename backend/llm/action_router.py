@@ -11,7 +11,18 @@ class ActionRouter:
         data = extract_json_from_text(llm_response)
         
         if data and "action" in data:
-            logger.info(f"Action detected: {data['action']['name']}")
+            action_name = data['action']['name']
+            
+            # Validate against registry
+            from backend.skills.registry import SkillRegistry
+            if not SkillRegistry.get_skill(action_name):
+                logger.warning(f"LLM hallucinated unknown action: {action_name}. Ignoring.")
+                return {
+                    "message": data.get("message", llm_response),
+                    "action": None
+                }
+
+            logger.info(f"Action detected: {action_name}")
             return data
         
         # If no JSON found or no action, treat entire response as message

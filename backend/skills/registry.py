@@ -23,6 +23,7 @@ class SkillRegistry:
         from backend.skills.search import SearchSkill
         from backend.skills.weather import WeatherSkill
         from backend.skills.timer import TimerSkill
+        from backend.skills.ingest import IngestSkill
 
         cls.register(PhoneSkill())
         cls.register(SMSSkill())
@@ -34,6 +35,7 @@ class SkillRegistry:
         cls.register(LearnSkill())
         cls.register(WeatherSkill())
         cls.register(TimerSkill())
+        cls.register(IngestSkill())
 
     @classmethod
     def get_skill(cls, name: str) -> BaseSkill:

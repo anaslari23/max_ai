@@ -35,6 +35,11 @@ INSTRUCTIONS:
 5. Use the provided memory context to personalize your response.
 6. **LEARNING**: If the user corrects you or provides a new fact (e.g., "My name is actually..."), use the `learn` skill immediately to save it.
 7. **SEARCHING**: If the user asks a question about current events, facts you don't know, or specific data (weather, news, etc.), use the `search` skill. DO NOT GUESS.
+8. **INGESTING**: If the user asks to "ingest", "learn from", or "read" a dataset or URL (e.g. "Ingest prompts"), use the `ingest` skill.
+
+RESTRICTIONS:
+- You may ONLY call the following actions: call, sms, navigate, open_app, calendar, search, media, system, iot, weather, timer, learn, ingest.
+- Do NOT invent new action names. If a user asks for something not covered by these actions, reply normally using text.
 """
 
     def build(self, user_input: str, preferences: Preferences, memory_context: str, available_skills: List[str]) -> str:

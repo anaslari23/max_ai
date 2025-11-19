@@ -6,6 +6,7 @@ from backend.llm.prompt_builder import PromptBuilder
 from backend.llm.action_router import ActionRouter
 from backend.config.settings import settings
 from backend.db.models.preferences import Preferences
+from backend.utils.logger import logger
 
 class Orchestrator:
     def __init__(self):
@@ -27,6 +28,7 @@ class Orchestrator:
         if provider_name == "gemini" and (not settings.GEMINI_API_KEY or settings.GEMINI_API_KEY == "..."):
             provider_name = "local"
             
+        logger.info(f"Selected LLM Provider: {provider_name.upper()}")
         provider = self.providers.get(provider_name, self.providers["local"])
         
         # 3. Generate Response (Re-Act Loop)
@@ -46,7 +48,7 @@ class Orchestrator:
             result = self.action_router.parse_action(raw_response)
             
             # Check if it's a server-side action (like search or weather)
-            if result.get("action") and result["action"]["name"] in ["search", "weather"]:
+            if result.get("action") and result["action"]["name"] in ["search", "weather", "ingest"]:
                 logger.info(f"Executing server-side action: {result['action']['name']}")
                 
                 # Execute the skill

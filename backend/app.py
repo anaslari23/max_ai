@@ -30,6 +30,11 @@ def create_app() -> FastAPI:
     from backend.api.ws.stream import websocket_endpoint
     app.add_api_websocket_route(f"{settings.API_V1_STR}/ws/stream", websocket_endpoint)
 
+    @app.on_event("startup")
+    async def startup_event():
+        from backend.db.session import init_db_engine
+        await init_db_engine()
+
     return app
 
 app = create_app()

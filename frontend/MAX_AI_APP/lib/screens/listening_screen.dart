@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:max_ai/services/websocket_service.dart';
 import 'package:max_ai/services/action_service.dart';
 import 'dart:math' as math;
+import 'dart:io' show Platform;
 
 class ListeningScreen extends StatefulWidget {
   const ListeningScreen({super.key});
@@ -97,16 +98,27 @@ class _ListeningScreenState extends State<ListeningScreen> with SingleTickerProv
     }
   }
 
+
+// ... imports ...
+
   void _connectWebSocket() {
+    // Determine correct URL based on platform
     String backendUrl = 'ws://localhost:8000/api/v1/ws/stream';
+    if (Platform.isAndroid) {
+      backendUrl = 'ws://10.0.2.2:8000/api/v1/ws/stream';
+    }
+    
     _wsService = WebSocketService(
       url: backendUrl,
       onMessage: _handleServerResponse,
       onError: (error) {
+        print("WebSocket Error: $error");
         if (mounted) setState(() => _isConnected = false);
-        if (backendUrl.contains('localhost')) {
-           _retryConnect('ws://10.0.2.2:8000/api/v1/ws/stream');
-        }
+        
+        // Simple retry logic - wait and reconnect to the SAME url
+        Future.delayed(const Duration(seconds: 2), () {
+           if (mounted) _retryConnect(backendUrl);
+        });
       },
     );
     _wsService.connect();
@@ -125,35 +137,68 @@ class _ListeningScreenState extends State<ListeningScreen> with SingleTickerProv
   }
 
   Future<void> _initVoice() async {
-    await Permission.microphone.request();
-    await _speech.initialize();
+    var status = await Permission.microphone.request();
+    print("Microphone permission status: $status");
+    
+    bool available = await _speech.initialize(
+      onError: (val) => print('STT Error: $val'),
+      onStatus: (val) => print('STT Status: $val'),
+    );
+    print("STT Initialized: $available");
+    
     await _flutterTts.setLanguage("en-US");
     await _flutterTts.setPitch(1.0);
   }
 
   void _listen() async {
     if (!_isListening) {
-      bool available = await _speech.initialize();
+      print("Starting listening...");
+      bool available = await _speech.initialize(
+        onError: (val) => print('STT Error: $val'),
+        onStatus: (val) => print('STT Status: $val'),
+      );
+      
+      print("STT Available: $available");
+      
       if (available) {
         setState(() {
           _isListening = true;
           _text = "Listening...";
         });
+        
         _speech.listen(
           onResult: (val) {
+            print("STT Result: ${val.recognizedWords} (Final: ${val.finalResult})");
             setState(() {
               _text = val.recognizedWords;
             });
             if (val.finalResult) {
+               print("Sending message: $_text");
                _sendMessage(_text);
                setState(() => _isListening = false);
             }
           },
+          localeId: "en_US",
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 3),
+          partialResults: true,
+          cancelOnError: true,
+          listenMode: stt.ListenMode.dictation,
         );
+      } else {
+        print("STT not available");
+        setState(() => _text = "Voice not available");
       }
     } else {
-      setState(() => _isListening = false);
+      print("Stopping listening...");
       _speech.stop();
+      setState(() => _isListening = false);
+      
+      // Manually send what we have if it's a valid input
+      if (_text.isNotEmpty && _text != "Listening..." && _text != "Tap to activate voice interface") {
+        print("Manual stop: Sending message: $_text");
+        _sendMessage(_text);
+      }
     }
   }
 
