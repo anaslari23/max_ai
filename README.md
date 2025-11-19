@@ -205,4 +205,3 @@ backend/
 
 ---
 
-Made with ❤️ by the Voice AI Team
