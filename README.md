@@ -32,13 +32,13 @@ graph TD
     end
 
     subgraph "Data Layer"
-        Postgres[(🐘 PostgreSQL\nUser Profiles & Logs)]
-        Redis[(⚡ Redis\nShort-term Memory & Cache)]
-        VectorDB[(🔍 Vector DB\nLong-term Memory)]
+        Postgres[("🐘 PostgreSQL<br>User Profiles & Logs")]
+        Redis[("⚡ Redis<br>Short-term Memory & Cache")]
+        VectorDB[("🔍 Vector DB<br>Long-term Memory")]
     end
 
     subgraph "External Services"
-        LLM_API[🤖 LLM Providers\n(OpenAI, Gemini, Local)]
+        LLM_API["🤖 LLM Providers<br>(OpenAI, Gemini, Local)"]
         STT_API[🗣️ STT Service]
         TTS_API[🔈 TTS Service]
     end
@@ -112,9 +112,9 @@ graph LR
     Auth --> Home[🏠 Home Dashboard]
     
     subgraph "Main Interface"
-        Home --> VoiceMode[🎙️ Voice Chat Mode\n(Main Interaction)]
+        Home --> VoiceMode["🎙️ Voice Chat Mode<br>(Main Interaction)"]
         Home --> History[📜 Chat History]
-        Home --> Settings[⚙️ Settings\n(Voice, Persona, API Keys)]
+        Home --> Settings["⚙️ Settings<br>(Voice, Persona, API Keys)"]
     end
 
     VoiceMode -->|Active Call| ActiveState[🔴 Listening / Speaking]
