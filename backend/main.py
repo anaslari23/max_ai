@@ -1,5 +1,6 @@
 import uvicorn
 from backend.config.settings import settings
+from backend.app import app
 
 if __name__ == "__main__":
     uvicorn.run(

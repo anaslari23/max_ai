@@ -19,13 +19,13 @@ class SearchSkill(BaseSkill):
             
             summary = "\n\n".join(formatted_results)
             
+            # Return a structured response that the Orchestrator can use
             return {
                 "status": "success",
-                "message": f"Here is what I found for '{query}':\n\n{summary}",
-                "action_data": {
-                    "type": "search",
-                    "query": query,
-                    "results": formatted_results
+                "message": f"Search Results for '{query}':\n\n{summary}",
+                "data": {
+                    "results": formatted_results,
+                    "summary": summary
                 }
             }
         except Exception as e:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:max_ai/services/websocket_service.dart';
 import 'package:max_ai/services/action_service.dart';
 
@@ -23,39 +24,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _connect() {
-    // Detect platform and choose URL
-    // Android Emulator: 10.0.2.2
-    // iOS Simulator / Web: localhost
-    // Physical Device: Use your computer's LAN IP (e.g. 192.168.1.x)
-    
     String backendUrl = 'ws://localhost:8000/api/v1/ws/stream';
-    
-    // Simple check for Android emulator (this is a heuristic, better to use Platform.isAndroid)
-    // For now, we'll try to be smart or let user configure it.
-    // Ideally, use 'dart:io' Platform check, but web compatibility requires conditional imports.
-    // We will stick to localhost for iOS/Web and 10.0.2.2 for Android if possible.
-    // Since we can't easily import dart:io in a universal file without conditional imports,
-    // we will default to localhost but add a comment for the user.
-    
-    // NOTE: If running on Android Emulator, change this to 'ws://10.0.2.2:8000/api/v1/ws/stream'
-    // backendUrl = 'ws://10.0.2.2:8000/api/v1/ws/stream';
-    
     _wsService = WebSocketService(
       url: backendUrl,
       onMessage: _handleMessage,
       onError: (error) {
-        print("WS Error: $error");
-        setState(() => _isConnected = false);
-        
-        // Auto-retry with Android URL if localhost fails (simple fallback logic)
+        if (mounted) setState(() => _isConnected = false);
         if (backendUrl.contains('localhost')) {
-           print("Retrying with Android Emulator URL...");
            _retryConnect('ws://10.0.2.2:8000/api/v1/ws/stream');
         }
       },
     );
     _wsService.connect();
-    setState(() => _isConnected = true);
+    if (mounted) setState(() => _isConnected = true);
   }
 
   void _retryConnect(String url) {
@@ -63,8 +44,7 @@ class _ChatScreenState extends State<ChatScreen> {
       url: url,
       onMessage: _handleMessage,
       onError: (error) {
-        print("WS Retry Error: $error");
-        setState(() => _isConnected = false);
+        if (mounted) setState(() => _isConnected = false);
       },
     );
     _wsService.connect();
@@ -80,7 +60,6 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       });
     }
-    
     if (data['action'] != null) {
       _actionService.handleAction(data['action']);
     }
@@ -88,7 +67,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() {
     if (_controller.text.trim().isEmpty) return;
-    
     final text = _controller.text;
     setState(() {
       _messages.add({
@@ -98,7 +76,6 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _controller.clear();
     });
-    
     _wsService.sendText(text);
   }
 
@@ -118,68 +95,98 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF050812),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('JARVIS', style: TextStyle(color: Colors.white)),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isConnected ? Icons.wifi : Icons.wifi_off,
-              color: _isConnected ? Colors.green : Colors.red,
-            ),
-            onPressed: _connect,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.black.withOpacity(0.5)),
           ),
+        ),
+        title: const Text('JARVIS', style: TextStyle(color: Colors.white, letterSpacing: 2)),
+        centerTitle: true,
+        actions: [
+          Icon(Icons.circle, size: 10, color: _isConnected ? const Color(0xFF00E0C6) : Colors.red),
+          const SizedBox(width: 16),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                return msg['isUser']
-                    ? _UserBubble(text: msg['text'], time: msg['time'])
-                    : _AssistantBubble(text: msg['text'], time: msg['time']);
-              },
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF050812), Color(0xFF001219)],
           ),
-          _buildComposer(),
-        ],
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  return msg['isUser']
+                      ? _UserBubble(text: msg['text'], time: msg['time'])
+                      : _AssistantBubble(text: msg['text'], time: msg['time']);
+                },
+              ),
+            ),
+            _buildComposer(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildComposer() {
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        color: const Color(0xFF020617),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Ask JARVIS...',
-                  hintStyle: const TextStyle(color: Colors.white54),
-                  filled: true,
-                  fillColor: const Color(0xFF020818),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.6),
+            border: const Border(top: BorderSide(color: Colors.white10)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Command...',
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
+                  onSubmitted: (_) => _sendMessage(),
                 ),
-                onSubmitted: (_) => _sendMessage(),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.send, color: Colors.tealAccent),
-              onPressed: _sendMessage,
-            ),
-          ],
+              const SizedBox(width: 12),
+              Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF00E0C6),
+                  boxShadow: [
+                    BoxShadow(color: Color(0xFF00E0C6), blurRadius: 10, spreadRadius: 1),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_upward, color: Colors.black),
+                  onPressed: _sendMessage,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -197,18 +204,25 @@ class _AssistantBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: const Color(0xFF111827),
-          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFF111827).withOpacity(0.8),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(4),
+            topRight: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+          ),
+          border: Border.all(color: Colors.white10),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(text, style: const TextStyle(color: Colors.white)),
-            const SizedBox(height: 4),
-            Text(time, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+            Text(text, style: const TextStyle(color: Colors.white, height: 1.4)),
+            const SizedBox(height: 6),
+            Text(time, style: const TextStyle(color: Colors.white30, fontSize: 10)),
           ],
         ),
       ),
@@ -227,18 +241,40 @@ class _UserBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: const Color(0xFF047857),
-          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF00E0C6), Color(0xFF00BFA6)],
+          ),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(4),
+            bottomRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00E0C6).withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(text, style: const TextStyle(color: Colors.white)),
-            const SizedBox(height: 4),
-            Text(time, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+            Text(
+              text, 
+              style: const TextStyle(
+                color: Colors.black, 
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(time, style: const TextStyle(color: Colors.black45, fontSize: 10)),
           ],
         ),
       ),

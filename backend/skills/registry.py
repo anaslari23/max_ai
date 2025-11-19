@@ -1,16 +1,39 @@
 from typing import Dict, Type, List
 from backend.skills.base import BaseSkill
 from backend.utils.logger import logger
-
 class SkillRegistry:
     _skills: Dict[str, BaseSkill] = {}
 
     @classmethod
-    def register(cls, skill_cls: Type[BaseSkill]):
-        skill_instance = skill_cls()
+    def register(cls, skill_instance: BaseSkill):
         cls._skills[skill_instance.name] = skill_instance
         logger.info(f"Registered skill: {skill_instance.name}")
-        return skill_cls
+        return skill_instance
+
+    @classmethod
+    def register_defaults(cls):
+        # Import here to avoid circular imports
+        from backend.skills.media import MediaSkill
+        from backend.skills.system import SystemSkill
+        from backend.skills.learn import LearnSkill
+        from backend.skills.phone import PhoneSkill
+        from backend.skills.sms import SMSSkill
+        from backend.skills.navigation import NavigationSkill
+        from backend.skills.calendar import CalendarSkill
+        from backend.skills.search import SearchSkill
+        from backend.skills.weather import WeatherSkill
+        from backend.skills.timer import TimerSkill
+
+        cls.register(PhoneSkill())
+        cls.register(SMSSkill())
+        cls.register(NavigationSkill())
+        cls.register(CalendarSkill())
+        cls.register(SearchSkill())
+        cls.register(MediaSkill())
+        cls.register(SystemSkill())
+        cls.register(LearnSkill())
+        cls.register(WeatherSkill())
+        cls.register(TimerSkill())
 
     @classmethod
     def get_skill(cls, name: str) -> BaseSkill:

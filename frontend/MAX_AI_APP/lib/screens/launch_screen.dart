@@ -1,7 +1,30 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
-class LaunchScreen extends StatelessWidget {
+class LaunchScreen extends StatefulWidget {
   const LaunchScreen({super.key});
+
+  @override
+  State<LaunchScreen> createState() => _LaunchScreenState();
+}
+
+class _LaunchScreenState extends State<LaunchScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,98 +33,113 @@ class LaunchScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              Color(0xFF00101A),
-              Color(0xFF003840),
-              Color(0xFF00A9A5),
+              Color(0xFF050813), // Deep Space
+              Color(0xFF0B1221), // Slightly lighter
+              Color(0xFF001F24), // Dark Teal hint
             ],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
+              // Top Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Icon(Icons.wifi, color: Colors.white70),
-                    Text(
-                      'MAX Awake',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Icon(Icons.mic_none, color: Colors.white70),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              _PulsingAvatar(),
-              const SizedBox(height: 24),
-              const Text(
-                'Say "Hey Max" or tap to speak',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton.icon(
-                      onPressed: () {
-                        // Navigate to face unlock settings
-                      },
-                      icon: const Icon(Icons.face_retouching_natural, color: Colors.white70),
-                      label: const Text(
-                        'Face unlock',
-                        style: TextStyle(color: Colors.white70),
+                    _StatusIcon(icon: Icons.wifi, label: "ONLINE"),
+                    const Text(
+                      'J.A.R.V.I.S',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
-                    TextButton.icon(
-                      onPressed: () {
-                        // Navigate to PIN unlock settings
-                      },
-                      icon: const Icon(Icons.pin, color: Colors.white70),
-                      label: const Text(
-                        'PIN unlock',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ),
+                    _StatusIcon(icon: Icons.battery_full, label: "100%"),
                   ],
                 ),
               ),
+              
+              const Spacer(),
+              
+              // Central Core
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return _BreathingCore(controller: _controller);
+                },
+              ),
+              
+              const SizedBox(height: 40),
+              
+              // Status Text
+              const Text(
+                'SYSTEM ONLINE',
+                style: TextStyle(
+                  color: Color(0xFF00E0C6),
+                  fontSize: 14,
+                  letterSpacing: 4,
+                  fontWeight: FontWeight.w600,
+                  shadows: [
+                    Shadow(color: Color(0xFF00E0C6), blurRadius: 10),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Awaiting voice command...',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 12,
+                ),
+              ),
+              
+              const Spacer(),
+              
+              // Action Button
+              Padding(
+                padding: const EdgeInsets.only(bottom: 40.0),
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/listening'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E0C6).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: const Color(0xFF00E0C6).withOpacity(0.5)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E0C6).withOpacity(0.2),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.mic, color: Color(0xFF00E0C6)),
+                        SizedBox(width: 12),
+                        Text(
+                          'INITIALIZE VOICE',
+                          style: TextStyle(
+                            color: Color(0xFF00E0C6),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 16.0),
-        child: SizedBox(
-          width: 220,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: const StadiumBorder(),
-              backgroundColor: const Color(0xFF00BFA6),
-            ),
-            onPressed: () {
-              Navigator.pushNamed(context, '/listening');
-            },
-            child: const Text(
-              'Tap to Speak',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
           ),
         ),
       ),
@@ -109,34 +147,101 @@ class LaunchScreen extends StatelessWidget {
   }
 }
 
-class _PulsingAvatar extends StatelessWidget {
+class _StatusIcon extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _StatusIcon({required this.icon, required this.label});
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 120,
-      height: 120,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const RadialGradient(
-          colors: [Color(0xFF00E0C6), Color(0xFF003840)],
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white30, size: 16),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white30, fontSize: 10),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.tealAccent.withOpacity(0.4),
-            blurRadius: 32,
-            spreadRadius: 8,
+      ],
+    );
+  }
+}
+
+class _BreathingCore extends StatelessWidget {
+  final AnimationController controller;
+
+  const _BreathingCore({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 200,
+      height: 200,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Outer Glow Ring 1
+          Transform.scale(
+            scale: 1.0 + (controller.value * 0.2),
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF00E0C6).withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00E0C6).withOpacity(0.1),
+                    blurRadius: 40,
+                    spreadRadius: 10,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Outer Glow Ring 2 (Rotating)
+          Transform.rotate(
+            angle: controller.value * 2 * math.pi,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF00E0C6).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
+          // Inner Core
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black,
+              border: Border.all(
+                color: const Color(0xFF00E0C6),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00E0C6).withOpacity(0.6),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(Icons.power_settings_new, color: Color(0xFF00E0C6), size: 32),
+            ),
           ),
         ],
-      ),
-      child: Container(
-        margin: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white24, width: 2),
-        ),
-        child: const Center(
-          child: Icon(Icons.circle, size: 16, color: Colors.white70),
-        ),
       ),
     );
   }

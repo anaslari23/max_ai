@@ -26,6 +26,10 @@ def create_app() -> FastAPI:
     app.include_router(memory.router, prefix=f"{settings.API_V1_STR}/memory", tags=["memory"])
     app.include_router(skills.router, prefix=f"{settings.API_V1_STR}/skills", tags=["skills"])
 
+    # WebSocket Route
+    from backend.api.ws.stream import websocket_endpoint
+    app.add_api_websocket_route(f"{settings.API_V1_STR}/ws/stream", websocket_endpoint)
+
     return app
 
 app = create_app()

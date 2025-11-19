@@ -29,16 +29,42 @@ class Orchestrator:
             
         provider = self.providers.get(provider_name, self.providers["local"])
         
-        # 3. Generate Response
-        try:
-            raw_response = await provider.generate_response(user_input, system_prompt, history)
-        except Exception as e:
-            logger.error(f"Provider {provider_name} failed: {e}. Falling back to Local.")
-            raw_response = await self.providers["local"].generate_response(user_input, system_prompt, history)
+        # 3. Generate Response (Re-Act Loop)
+        max_turns = 3
+        current_turn = 0
         
-        # 4. Parse Action
-        result = self.action_router.parse_action(raw_response)
-        
+        while current_turn < max_turns:
+            current_turn += 1
+            
+            try:
+                raw_response = await provider.generate_response(user_input, system_prompt, history)
+            except Exception as e:
+                logger.error(f"Provider {provider_name} failed: {e}. Falling back to Local.")
+                raw_response = await self.providers["local"].generate_response(user_input, system_prompt, history)
+            
+            # 4. Parse Action
+            result = self.action_router.parse_action(raw_response)
+            
+            # Check if it's a server-side action (like search or weather)
+            if result.get("action") and result["action"]["name"] in ["search", "weather"]:
+                logger.info(f"Executing server-side action: {result['action']['name']}")
+                
+                # Execute the skill
+                from backend.skills.registry import SkillRegistry
+                skill = SkillRegistry.get_skill(result["action"]["name"])
+                if skill:
+                    skill_result = await skill.execute(result["action"]["params"])
+                    
+                    # Add observation to history/context for the next turn
+                    observation = f"SYSTEM OBSERVATION: {skill_result['message']}"
+                    history.append({"role": "system", "content": observation})
+                    
+                    # Continue the loop to let LLM answer based on observation
+                    continue
+            
+            # If not a server-side action, or if we're done, return the result
+            return result
+            
         return result
 
     async def process_stream(self, user_input: str, history: List[Dict[str, str]], preferences: Preferences, memory_context: str, available_skills: List[str]):
